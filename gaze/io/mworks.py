@@ -83,3 +83,7 @@ def read_info(df, name=None):
         return []
 
     return [events.Event(e.time, e.value) for e in df.get_events(name)]
+
+
+def read(df):
+    return read_gaze_as_array(df), read_info(df)
