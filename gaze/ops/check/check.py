@@ -6,6 +6,17 @@ import numpy
 
 import contracts
 
+
+# make sure we have a version of contracts that supports numpy type checking
+def _test_contracts():
+    try:
+        contracts.check('=0', numpy.arange(1, dtype=numpy.int8)[0])
+    except:
+        raise ImportError( \
+                "Invalid contracts[%s], does not support numpy types" \
+                % contracts.__version__)
+_test_contracts()
+
 from ...utils import cursor
 
 ERRORS = {
@@ -19,7 +30,7 @@ ERRORS = {
         'tracker_unknown': 0b1 << 0 << 4,
         'distance': 0b1 << 1 << 4,
         'y_equator': 0b1 << 2 << 4,
-        'y_topCR': 0b1 << 3 << 4,
+        'y_topCR_ref': 0b1 << 3 << 4,
         'pixels_per_mm': 0b1 << 4 << 4,
         'Rp': 0b1 << 5 << 4,
         'Rp_mm': 0b1 << 6 << 4,
@@ -41,9 +52,9 @@ ERRORS = {
 # shortcut for isnan: '<0|>=0' will pass for all numbers (and inf)
 DICONTRACTS = {
         'distance': '>360,<400,<0|>=0',
-        'y_equator': 'int,>0,<240',
-        'y_topCR': 'float,>0,<240',
-        'pixels_per_mm': 'float,>0,<30',
+        'y_equator': '>0,<240',
+        'y_topCR_ref': 'float,>0,<240',
+        'pixels_per_mm': 'float,>0,<50',  # range?
         'Rp': 'float,>10,<100',
         'Rp_mm': 'float,>0.5,<5.0',
         }
@@ -68,7 +79,7 @@ def parse_error_bits(bits):
     maxval = max(ERRORS.values())
     rd = {v: k for k, v in ERRORS.iteritems()}
     errors = []
-    while m < maxval:
+    while m <= maxval:
         if (m & bits):
             if m in rd.keys():
                 errors.append(rd[m])
