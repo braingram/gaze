@@ -56,13 +56,15 @@ DICONTRACTS = {
         'y_topCR_ref': 'float,>0,<240',
         'pixels_per_mm': 'float,>0,<50',  # range?
         'Rp': 'float,>10,<100',
-        'Rp_mm': 'float,>0.5,<5.0',
+        # Block 1969, Lashley 1932 [d:5.51,6.35]
+        # this is for eye diameter, the pupil is closer to the center
+        'Rp_mm': 'float,>0.5,<4.0',
         }
 
 DGCONTRACTS = {  # TODO will these be tested against arrays or floats?
         'gaze_h': '>-180,<180,<0|>=0',
         'gaze_v': '>-180,<180,<0|>=0',
-        'pupil_radius': '>0,<0|>=0',
+        'pupil_radius': '>0.15,<1.3,<0|>=0',  # Block 1969 [0.2,1.2]
         'cobra_timestamp': '<0|>=0',
         'pupil_x': '>0,<320,<0|>=0',  # TODO camera resolution?
         'pupil_y': '>0,<240,<0|>=0',
