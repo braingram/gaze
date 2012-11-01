@@ -51,7 +51,7 @@ ERRORS = {
 
 # shortcut for isnan: '<0|>=0' will pass for all numbers (and inf)
 DICONTRACTS = {
-        'distance': '>360,<400,<0|>=0',
+        'distance': '>360,<400,(<0|>=0)',
         'y_equator': '>0,<240',
         'y_topCR_ref': 'float,>0,<240',
         'pixels_per_mm': 'float,>0,<50',  # range?
@@ -62,21 +62,21 @@ DICONTRACTS = {
         }
 
 DGCONTRACTS = {  # TODO will these be tested against arrays or floats?
-        'gaze_h': '>-180,<180,<0|>=0',
-        'gaze_v': '>-180,<180,<0|>=0',
-        'pupil_radius': '>0.15,<1.3,<0|>=0',  # Block 1969 [0.2,1.2]
-        'cobra_timestamp': '<0|>=0',
-        'pupil_x': '>0,<320,<0|>=0',  # TODO camera resolution?
-        'pupil_y': '>0,<240,<0|>=0',
-        'cr_x': '>0,<320,<0|>=0',
-        'cr_y': '>0,<240,<0|>=0',
-        'calibration_status': '=3,<0|>=0',
+        'gaze_h': '>-180,<180,(<0|>=0)',
+        'gaze_v': '>-180,<180,(<0|>=0)',
+        'pupil_radius': '>0.15,<1.3,(<0|>=0)',  # Block 1969 [0.2,1.2]
+        'cobra_timestamp': '(<0|>=0)',
+        'pupil_x': '>0,<320,(<0|>=0)',  # TODO camera resolution?
+        'pupil_y': '>0,<240,(<0|>=0)',
+        'cr_x': '>0,<320,(<0|>=0)',
+        'cr_y': '>0,<240,(<0|>=0)',
+        'calibration_status': '=3,(<0|>=0)',
         }
 
 
 def parse_error_bits(bits):
     if bits == 0:
-        return ['none']
+        return []
     m = 1
     maxval = max(ERRORS.values())
     rd = {v: k for k, v in ERRORS.iteritems()}
@@ -154,3 +154,67 @@ def check_validity(gaze, info, gaze_contracts=None, info_contracts=None):
         gc.advance()
         errors.append(e)
     return errors
+
+
+def get_emask():
+    r = 0
+    for e in ERRORS:
+        r |= ERRORS[e]
+    return r
+
+
+def get_info_emask():
+    # bits 5 through 18 (inclusive)
+    return ((2 ** 18 - 1) ^ (2 ** 4 - 1)) & get_emask()
+
+
+def get_data_emask():
+    # bits 19 through 18 (inclusive)
+    return ((2 ** 32 - 1) ^ (2 ** 18 - 1)) & get_emask()
+
+
+def find_minimum_error_mask(gaze, info, \
+        gaze_contracts=None, info_contracts=None):
+    """
+    Find the 'minimum' expected error for this session.
+    This is an attempt to sort out how much info is 'potentially'
+    available during the session and an attempt to determine
+    what version of the eyetracker was used to generate this data.
+    This may differ from the actual mimimum error.
+
+    if the error mask is 0, than the most up-to-date version
+    of the eyetracker was used and valid points should have error == 0
+    """
+    assert isinstance(gaze, numpy.ndarray)
+
+    gaze_contracts = DGCONTRACTS if gaze_contracts is None else gaze_contracts
+    info_contracts = DICONTRACTS if info_contracts is None else info_contracts
+    emask = 0
+    if not len(info):  # NO info is available
+        emask |= get_info_emask()
+    if not len(gaze):  # NO data is available
+        emask |= get_data_emask()
+    # old sessions had:
+    # only gaze_h, gaze_v
+    # h, v, pr, ts
+
+    # if gaze data is missing a value it will all be nan
+    for k in gaze_contracts.keys():
+        if numpy.sum(numpy.isnan(gaze[k])) == gaze.size:
+            emask |= ERRORS[k]
+
+    # what info is present?
+    found_info = {}
+    for i in info:
+        d = i.value.get('calibration', {})
+        for k in info_contracts.keys():
+            if k in d:
+                found_info[k] = 1
+
+    # if some piece of info is missing in ALL info events...
+    for k in info_contracts.keys():
+        if k not in found_info:
+            # add to emask
+            emask |= ERRORS[k]
+
+    return emask

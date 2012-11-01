@@ -17,7 +17,7 @@ DDTYPE = numpy.dtype([
         ('gaze_v', 'f8'),
         ('cobra_timestamp', 'f8'),
         ('pupil_radius', 'f8'),
-        ('calibration_status', 'u1'),
+        ('calibration_status', 'f8'),
         ('pupil_x', 'f8'),
         ('pupil_y', 'f8'),
         ('cr_x', 'f8'),
@@ -82,7 +82,11 @@ def read_info(df, name=None):
     if name not in df.codec.values():
         return []
 
-    return [events.Event(e.time, e.value) for e in df.get_events(name)]
+    info = []
+    for e in df.get_events(name):
+        v = e.value if isinstance(e.value, dict) else {}
+        info.append(events.Event(e.time, v))
+    return info
 
 
 def read(df):
