@@ -66,6 +66,8 @@ def read_gaze_as_array(df, dtype=None):
     gaze = numpy.empty(n, dtype=dtype)
     get_time = True
     for event_name in dtype.names:
+        if event_name == 'time':  # 'time' will be fetched below
+            continue
         if event_name in evs.keys():
             gaze[event_name] = numpy.array([e.value for e in evs[event_name]])
             if get_time:
