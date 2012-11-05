@@ -41,7 +41,7 @@ def by_acceleration_mask(gaze_data, thresh=None):
     h, v = ops.acceleration(gaze_data)
     # finite & sub-threshold
     good = (numpy.abs(h) < thresh) & (numpy.abs(v) < thresh)
-    return good[1:] & good[:-1]
+    return numpy.array([False, ] + list(good[1:] & good[:-1]))
 
 
 def by_acceleration(gaze_data, thresh=None):
