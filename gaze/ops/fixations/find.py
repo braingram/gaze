@@ -16,15 +16,36 @@ def test_for_fixation(gd, max_dev):
     return (t[0], t[-1], mh, mv)
 
 
-def find(gd, min_time=0.1, max_dev=1., min_points=2):
-    t = gd['time'] / 1E6
+def to_array(f):
+    return numpy.array(f, \
+            dtype=[('start', int), ('end', int), ('h', float), ('v', float)])
+
+
+def find(gd, min_time=0.1 * 1E6, max_dev=1., min_points=2):
+    fixations = []
     i = 0
-    s = 0
-    while i < len(gd):
-        if t[i] - t[s] >= min_time:
-            if i - s >= min_points:
-                f = test_for_fixation(gd[s:i], max_dev)
-                if f is not None:
-                    yield f
-            s += 1
-        i += 1
+    while i + min_points < len(gd):
+        e = i + min_points
+        while gd[e]['time'] - gd[i]['time'] < min_time:
+            e += 1
+            if e == len(gd):
+                return to_array(fixations)
+        ## check for fixation
+        #if e - i < min_points:
+        #    # continue with no fixation
+        #    i += 1
+        #    print 'min points failed'
+        #    continue
+        f = test_for_fixation(gd[i:e], max_dev)
+        pf = f
+        while f is not None:
+            pf = f
+            e += 1
+            if e == len(gd):
+                fixations.append(pf)
+                return to_array(fixations)
+            f = test_for_fixation(gd[i:e], max_dev)
+        if pf is not None:
+            fixations.append(pf)
+        i = e
+    return to_array(fixations)
