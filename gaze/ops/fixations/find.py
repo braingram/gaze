@@ -21,7 +21,7 @@ def to_array(f):
             dtype=[('start', int), ('end', int), ('h', float), ('v', float)])
 
 
-def find(gd, min_time=0.1 * 1E6, max_dev=1., min_points=2):
+def find(gd, min_time=0.1 * 1E6, max_dev=3., min_points=10):
     fixations = []
     i = 0
     while i + min_points < len(gd):
