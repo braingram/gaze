@@ -8,8 +8,6 @@ There are several varieties of gaze data in mworks files including:
 
 import numpy
 
-from ..data import events
-
 
 DDTYPE = numpy.dtype(
     [('time', 'u8'),
@@ -91,7 +89,8 @@ def read_info(df, name=None):
     info = []
     for e in df.get_events(name):
         v = e.value if isinstance(e.value, dict) else {}
-        info.append(events.Event(e.time, v))
+        v['time'] = e.time
+        info.append(v)
     return info
 
 
