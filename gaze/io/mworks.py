@@ -11,18 +11,19 @@ import numpy
 from ..data import events
 
 
-DDTYPE = numpy.dtype([
-        ('time', 'u8'),
-        ('gaze_h', 'f8'),
-        ('gaze_v', 'f8'),
-        ('cobra_timestamp', 'f8'),
-        ('pupil_radius', 'f8'),
-        ('calibration_status', 'f8'),
-        ('pupil_x', 'f8'),
-        ('pupil_y', 'f8'),
-        ('cr_x', 'f8'),
-        ('cr_y', 'f8'),
-        ])
+DDTYPE = numpy.dtype(
+    [('time', 'u8'),
+     ('gaze_h', 'f8'),
+     ('gaze_v', 'f8'),
+     ('cobra_timestamp', 'f8'),
+     ('pupil_radius', 'f8'),
+     ('calibration_status', 'i1'),  # -1: unknown, otherwise 0->3
+     ('pupil_x', 'f8'),
+     ('pupil_y', 'f8'),
+     ('cr_x', 'f8'),
+     ('cr_y', 'f8'),
+     ('top_led', 'i1'),  # -1: unknown, 0: off, 1: on
+     ('side_led', 'i1')])  # -1: unknwon, 0: off, 1: on
 
 DINFO = 'tracker_info'
 
@@ -60,8 +61,8 @@ def read_gaze_as_array(df, dtype=None):
     ns = [len(e) for e in evs.values()]
     assert len(ns), "No events found"
     assert all([ns[0] == n for n in ns[1:]]), \
-            "found unequal number of events: %s" % \
-            str([(k, len(v)) for k, v in evs.iteritems()])
+        "found unequal number of events: %s" % \
+        str([(k, len(v)) for k, v in evs.iteritems()])
     n = ns[0]
     gaze = numpy.empty(n, dtype=dtype)
     get_time = True
@@ -74,7 +75,10 @@ def read_gaze_as_array(df, dtype=None):
                 gaze['time'] = numpy.array([e.time for e in evs[event_name]])
                 get_time = False
         else:
-            gaze[event_name] = numpy.nan
+            if dtype[event_name].kind == 'i':
+                gaze[event_name] = -1
+            else:
+                gaze[event_name] = numpy.nan
 
     return gaze
 
