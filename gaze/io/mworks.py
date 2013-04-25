@@ -6,6 +6,8 @@ There are several varieties of gaze data in mworks files including:
     2) (see 1) + calibration_status, pupil_x/y, cr_x/y, tracker_info
 """
 
+import copy
+
 import numpy
 
 
@@ -53,7 +55,7 @@ def read_gaze_as_array(df, dtype=None):
     evs = {}
     for event_name in dtype.names:
         if event_name in c.values() and event_name != 'time':
-            evs[event_name] = df.get_events(event_name)
+            evs[event_name] = df.get_events(event_name)   # takes 98% time
 
     # figure out number of events
     ns = [len(e) for e in evs.values()]
@@ -87,8 +89,13 @@ def read_info(df, name=None):
         return []
 
     info = []
+    pv = None
     for e in df.get_events(name):
         v = e.value if isinstance(e.value, dict) else {}
+        # skip duplicates
+        if v == pv:
+            continue
+        pv = copy.deepcopy(v)
         v['time'] = e.time
         info.append(v)
     return info
